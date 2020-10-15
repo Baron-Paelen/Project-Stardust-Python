@@ -13,18 +13,15 @@ def parse(file):
         fileobj = open(file)
     else:
         fileobj = file
-    
-    try:
-        for line in fileobj:
-            if line.startswith('#'):
-                continue
-            key, value = map(str.strip, line.split('=', 1))
-            vmx_data[key] = ' '.join(shlex.split(value)) 
-            line = fileobj.readline()
-    finally:
-        if fileobj is not file:
-            fileobj.close()
+
+    for line in fileobj:
+        if line.startswith('#'):
+            continue
+        key, value = map(str.strip, line.split('=', 1))
+        vmx_data[key] = ' '.join(shlex.split(value)) 
+            
     return vmx_data
+
 
 
 def save(vmx_data, file):
@@ -46,4 +43,7 @@ def save(vmx_data, file):
 with open(os.path.join('./', 'UbuntuJavaTemplate.vmx')) as file:
     vmxDict = parse(file)
 
-print(vmxDict)
+
+# 
+for x, y in vmxDict.items():
+    print(x + ' = "' + y + '"')
