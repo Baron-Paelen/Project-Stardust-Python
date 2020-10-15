@@ -1,4 +1,4 @@
-import vmxparser, os, shlex, sys
+import os, shlex, sys
 from shutil import copyfile
 
 #TODO
@@ -18,14 +18,20 @@ from shutil import copyfile
 #MUST INPUT OPEN()'D FILE
 def parse(file):
     vmx_data = {}
-    fileobj = file
-
-    for line in fileobj:
-        if line.startswith('#'):
-            continue
-        key, value = map(str.strip, line.split('=', 1))
-        vmx_data[key] = ' '.join(shlex.split(value)) 
-            
+    if isinstance(file, str):
+        fileobj = open(file)
+    else:
+        fileobj = file
+    
+    try:
+        for line in fileobj:
+            if line.startswith('#'):
+                continue
+            key, value = map(str.strip, line.split('=', 1))
+            vmx_data[key] = ' '.join(shlex.split(value)) 
+    finally:
+        if fileobj is not file:
+            fileobj.close()
     return vmx_data
 
 #MUST INPUT OPEN()'D FILE
@@ -41,14 +47,14 @@ def save(vmx_data, file):
 #TODO read specific .vmx file, currently testing using .vmx in cwd
 with open(os.path.join('./TEMPLATES/', 'UbuntuJavaTemplate.vmx')) as file:
     vmxDict = parse(file)
-# for x, y in vmxDict.items():
-#     print(x + ' = "' + y + '"')
 
 
 # test copying template to fake storage, editing copied file
 copyfile(os.path.join('./TEMPLATES/', 'UbuntuJavaTemplate.vmx'), os.path.join('./STORAGE/', 'UbuntuJavaTemplateCOPIED.vmx'))
 with open(os.path.join('./STORAGE/', 'UbuntuJavaTemplateCOPIED.vmx'), "w") as file:
-    vmxDict["RemoteDisplay.vnc.port"] = "589999999"
+    vmxDict["RemoteDisplay.vnc.port"] = "5899"
     save(vmxDict, file)
 
+
 print(sys.argv)
+
