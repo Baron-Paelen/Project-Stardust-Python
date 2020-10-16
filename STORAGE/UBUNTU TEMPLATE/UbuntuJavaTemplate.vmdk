@@ -1,0 +1,27 @@
+# Disk DescriptorFile
+version=1
+encoding="windows-1252"
+CID=eb760727
+parentCID=ffffffff
+createType="twoGbMaxExtentSparse"
+
+# Extent description
+RW 8323072 SPARSE "UbuntuJavaTemplate-s001.vmdk"
+RW 8323072 SPARSE "UbuntuJavaTemplate-s002.vmdk"
+RW 8323072 SPARSE "UbuntuJavaTemplate-s003.vmdk"
+RW 8323072 SPARSE "UbuntuJavaTemplate-s004.vmdk"
+RW 8323072 SPARSE "UbuntuJavaTemplate-s005.vmdk"
+RW 327680 SPARSE "UbuntuJavaTemplate-s006.vmdk"
+
+# The Disk Data Base 
+#DDB
+
+ddb.adapterType = "lsilogic"
+ddb.geometry.cylinders = "2610"
+ddb.geometry.heads = "255"
+ddb.geometry.sectors = "63"
+ddb.longContentID = "3fc1255fd6faf9e1d69e999ceb760727"
+ddb.toolsInstallType = "4"
+ddb.toolsVersion = "11296"
+ddb.uuid = "60 00 C2 9d 4a f8 c8 26-66 c5 e6 9f 86 d8 d8 7c"
+ddb.virtualHWVersion = "16"

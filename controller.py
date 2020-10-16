@@ -1,5 +1,4 @@
-import os, shlex, sys
-from shutil import copyfile
+import os, shlex, sys, shutil
 
 #TODO
 # Wtf is the Ruby interface
@@ -10,11 +9,11 @@ from shutil import copyfile
 # Taking arguments - can parse, need format
 # 
 
-##############################################################
-# parsing the .vmx files using "vmxparser" into a dictionary #
-##############################################################
-#yoinked from vmxparser: https://pypi.org/project/vmxparser/
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# parsing the .vmx files using "vmxparser" into a dictionary  #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
+# yoinked from vmxparser: https://pypi.org/project/vmxparser/
 #MUST INPUT OPEN()'D FILE
 def parse(file):
     vmx_data = {}
@@ -35,26 +34,52 @@ def parse(file):
     return vmx_data
 
 #MUST INPUT OPEN()'D FILE
+# Saves dict "vmx_data" to file "file"
 def save(vmx_data, file):
-    fileobj = file
+    if isinstance(file, str):
+        fileobj = open(file)
+    else:
+        fileobj = file
 
     for key, value in vmx_data.items():
-        fileobj.write(key)
-        fileobj.write(' = ')
-        fileobj.write('"%s"\n' % value.replace('"', '\\"'))
-
-# parsing the .vmx file
-#TODO read specific .vmx file, currently testing using .vmx in cwd
-with open(os.path.join('./TEMPLATES/', 'UbuntuJavaTemplate.vmx')) as file:
-    vmxDict = parse(file)
+        fileobj.write(key + ' = ' + '"%s"\n' % value.replace('"', '\\"'))
 
 
-# test copying template to fake storage, editing copied file
-copyfile(os.path.join('./TEMPLATES/', 'UbuntuJavaTemplate.vmx'), os.path.join('./STORAGE/', 'UbuntuJavaTemplateCOPIED.vmx'))
-with open(os.path.join('./STORAGE/', 'UbuntuJavaTemplateCOPIED.vmx'), "w") as file:
-    vmxDict["RemoteDisplay.vnc.port"] = "5899"
-    save(vmxDict, file)
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# different modes to run inside pseudo switch case            #
+# startvm - gee I wonder                                      #
+# stopvm - read: above                                        #
+#                                                             #
+#                                                             #
+#TODO add others if needed                                    #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+def startvm():
+    #TODO need to know what parameters we gon use
+    print("RWERWERWERWERERWER")
+    pass
+
+def stopvm():
+    #TODO need ot know what parameters we gon use
+    print("STOPP IT ")
+    pass
+
+#pseudo switch case
+def switch(arg):
+    statement = {
+        "-startvm" : startvm(),
+        "-stopvm" : stopvm()
+    }
 
 
-print(sys.argv)
+if not os.path.exists(sys.argv[2]): 
+    print(f"Directory not found: {sys.argv[2]}")
+    exit()
+if os.path.exists(sys.argv[3]): 
+    print(f"Directory already exists: {sys.argv[2]}")
+    exit()
 
+
+shutil.copytree(os.path.join(sys.argv[2]), os.path.join(sys.argv[3]))
+
+switch(sys.argv[1])
