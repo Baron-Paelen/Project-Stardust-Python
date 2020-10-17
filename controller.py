@@ -1,4 +1,4 @@
-import os, shlex, sys, shutil
+import os, shlex, sys, shutil, zipfile
 
 #TODO
 # Wtf is the Ruby interface
@@ -6,7 +6,7 @@ import os, shlex, sys, shutil
 # Running VM: vmrun - http://www.vi-toolkit.com/wiki/index.php/Vmrun#:~:text=vmrun%20is%20a%20command%20line,program%20in%20the%20guest%2C%20etcetera.
 # Powering off VM: see above
 #
-# Taking arguments - can parse, need format
+# Taking arguments - can parse, need funcitonality
 # 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -48,38 +48,44 @@ def save(vmx_data, file):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # different modes to run inside pseudo switch case            #
 # startvm - gee I wonder                                      #
+#   createvm - create a VM from template                      #
 # stopvm - read: above                                        #
 #                                                             #
 #                                                             #
-#TODO add others if needed                                    #
+# TODO add others if needed                                   #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-def startvm():
+def createvm(vmDir, vmType):
+    
+    #TODO need to know how ot take in parameter
+    os.mkdir(vmDir)
+    with zipfile.ZipFile(os.path.join('./TEMPLATES/', 'UbuntuJavaTemplate.zip'), 'r') as zip_ref:
+        zip_ref.extractall(vmDir)
+
+
+def startvm(vmDir, vmType, vncPort):
+    if not os.path.exists(vmDir):
+        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" + os.path.exists(vmDir))
+        createvm(vmDir, vmType)
     #TODO need to know what parameters we gon use
-    print("RWERWERWERWERERWER")
-    pass
+    with open(os.path.join(vmDir, "")) as file:
+        vmxDict = parse(file)
+    vmxDict["RemoteDisplay.vnc.port"] = vncPort
+    save(vmxDict, os.join(vmDir, vmType + ".vmx"))    
 
-def stopvm():
+def stopvm(vmDir):
     #TODO need ot know what parameters we gon use
-    print("STOPP IT ")
+    print("nghvkhfkhvjyfkjytfhfkuyrkjykvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv")
     pass
 
-#pseudo switch case
+#lame ass switch case
 def switch(arg):
-    statement = {
-        "-startvm" : startvm(),
-        "-stopvm" : stopvm()
-    }
-
-
-if not os.path.exists(sys.argv[2]): 
-    print(f"Directory not found: {sys.argv[2]}")
-    exit()
-if os.path.exists(sys.argv[3]): 
-    print(f"Directory already exists: {sys.argv[2]}")
-    exit()
-
-
-shutil.copytree(os.path.join(sys.argv[2]), os.path.join(sys.argv[3]))
-
+    if arg == "-startvm":
+        return startvm(sys.argv[2], sys.argv[3], sys.argv[4])
+    elif arg == "stopvm":
+        return stopvm(sys.argv[2])
+    else:
+        print(f'"{arg}" is not a valid command!')
+        exit()
+    
 switch(sys.argv[1])

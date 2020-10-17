@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<Foundry>
-<VM>
-<VMId type="string">52 64 54 ac 2b ad fc 7b-f8 bf a1 d3 d6 e2 70 1e</VMId>
-<ClientMetaData>
-<clientMetaDataAttributes/>
-<HistoryEventList/></ClientMetaData>
-<vmxPathName type="string">UbuntuJavaTemplate.vmx</vmxPathName></VM></Foundry>
