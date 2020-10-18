@@ -1,4 +1,10 @@
-import os, shlex, sys, shutil, zipfile
+import os, sys
+from time import sleep
+from shlex import split
+from shutil import move, rmtree
+from zipfile import ZipFile
+from glob import glob
+from pathlib import Path
 
 #TODO
 # Wtf is the Ruby interface
@@ -27,7 +33,7 @@ def parse(file):
             if line.startswith('#'):
                 continue
             key, value = map(str.strip, line.split('=', 1))
-            vmx_data[key] = ' '.join(shlex.split(value)) 
+            vmx_data[key] = ' '.join(split(value)) 
     finally:
         if fileobj is not file:
             fileobj.close()
@@ -37,12 +43,13 @@ def parse(file):
 # Saves dict "vmx_data" to file "file"
 def save(vmx_data, file):
     if isinstance(file, str):
-        fileobj = open(file)
+        fileobj = open(file, 'r+')
     else:
         fileobj = file
 
     for key, value in vmx_data.items():
         fileobj.write(key + ' = ' + '"%s"\n' % value.replace('"', '\\"'))
+
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -55,37 +62,96 @@ def save(vmx_data, file):
 # TODO add others if needed                                   #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+#creates the specified VM at vmDir of type vmType
 def createvm(vmDir, vmType):
+    if len(sys.argv) < 4:
+        print("Insufficent arguments.")
+        exit()
+    if len(sys.argv) > 4:
+        print("Too many arguments.")
+        exit()
+
+    print("Making dir: " + vmDir + " unzipping template")
+    Path(vmDir).mkdir(parents=True, exist_ok=True)
+
+    # TODO Here will go the code that parses the vmType into a specific directory 
+    # that points to the template zip
     
-    #TODO need to know how ot take in parameter
-    os.mkdir(vmDir)
-    with zipfile.ZipFile(os.path.join('./TEMPLATES/', 'UbuntuJavaTemplate.zip'), 'r') as zip_ref:
-        zip_ref.extractall(vmDir)
+    #print(ZipFile('./TEMPLATES/UbuntuJavaTemplateTEST.zip', 'r').namelist())
+    with ZipFile('./TEMPLATES/UbuntuJavaTemplateTEST.zip', 'r') as zip_ref:
+        #print(zip_ref.namelist())
+        zip_ref.extractall(path=os.path.dirname(os.path.dirname(vmDir)))
 
-
-def startvm(vmDir, vmType, vncPort):
-    if not os.path.exists(vmDir):
-        print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" + os.path.exists(vmDir))
-        createvm(vmDir, vmType)
-    #TODO need to know what parameters we gon use
-    with open(os.path.join(vmDir, "")) as file:
+    vmxPath = glob(os.path.join(vmDir, '*.vmx'))[0]
+    with open(vmxPath, 'r+') as file:
         vmxDict = parse(file)
+    # stops the annoying "I copied it" window from popping up 
+    vmxDict["uuid.action"] = 'keep'
+    save(vmxDict, vmxPath)   
+
+# configures the VNC port correctly and launches the specified VM
+def startvm(vmDir, vmType, vncPort):
+    if len(sys.argv) < 5:
+        print("Insufficent arguments.")
+        exit()
+    if len(sys.argv) > 5:
+        print("Too many arguments.")
+        exit()
+
+    # handles directory error
+    if not os.path.exists(vmDir):
+        print("That VM doesn't exist! Check your directory or run '-createvm' first.")
+        exit()
+
+    # reads .vmx to file to be edited
+    vmxPath = glob(os.path.join(vmDir, '*.vmx'))[0]
+    with open(vmxPath, 'r+') as file:
+        vmxDict = parse(file)
+    # configures VNC port to be vncPort and saves it
     vmxDict["RemoteDisplay.vnc.port"] = vncPort
-    save(vmxDict, os.join(vmDir, vmType + ".vmx"))    
+    save(vmxDict, vmxPath)   
+
+    # launches the VM at vmxPath
+    os.system(f'vmrun start {vmxPath}') 
 
 def stopvm(vmDir):
-    #TODO need ot know what parameters we gon use
-    print("nghvkhfkhvjyfkjytfhfkuyrkjykvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv")
-    pass
+    if len(sys.argv) < 3:
+        print("Insufficent arguments.")
+        exit()
+    if len(sys.argv) > 3:
+        print("Too many arguments.")
+        exit()
+        
+    vmxPath = glob(os.path.join(vmDir, '*.vmx'))[0]    
+    os.system(f'vmrun stop {vmxPath}') 
+    sleep(3)
+
+    peth = Path(vmDir)
+    thing = list(peth.parts)
+    thing[0] = "STORAGE"
+    targ = os.path.join(*thing)
+    print(targ)
+
+    move(vmDir, targ)
+    if len(os.listdir(os.path.dirname(os.path.dirname(vmDir)))) == 0:
+        rmtree(os.path.dirname(os.path.dirname(vmDir)))
+
+
+
 
 #lame ass switch case
 def switch(arg):
     if arg == "-startvm":
         return startvm(sys.argv[2], sys.argv[3], sys.argv[4])
-    elif arg == "stopvm":
+    elif arg == "-stopvm":
         return stopvm(sys.argv[2])
+    elif arg == "-createvm":
+        return createvm(sys.argv[2], sys.argv[3])
     else:
         print(f'"{arg}" is not a valid command!')
         exit()
     
 switch(sys.argv[1])
+#print(os.path.join('.\\TEMPLATES', glob('.\\TEMPLATES\\*.zip')[1]))
+# ARGS: -type targetVM targetVMType VNCPort
+#        [1]    [2]        [3]        [4]
