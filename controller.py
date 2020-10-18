@@ -1,7 +1,7 @@
 import os, sys
 from time import sleep
 from shlex import split
-from shutil import move, rmtree
+from shutil import move, rmtree, make_archive
 from zipfile import ZipFile
 from glob import glob
 from pathlib import Path
@@ -9,10 +9,7 @@ from pathlib import Path
 #TODO
 # Wtf is the Ruby interface
 # Figure out how/where to store templates  VM's and .vmx's currently in use.
-# Running VM: vmrun - http://www.vi-toolkit.com/wiki/index.php/Vmrun#:~:text=vmrun%20is%20a%20command%20line,program%20in%20the%20guest%2C%20etcetera.
-# Powering off VM: see above
 #
-# Taking arguments - can parse, need funcitonality
 # 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -21,6 +18,7 @@ from pathlib import Path
 
 # yoinked from vmxparser: https://pypi.org/project/vmxparser/
 #MUST INPUT OPEN()'D FILE
+# parses .vmx file into a dictionary
 def parse(file):
     vmx_data = {}
     if isinstance(file, str):
@@ -40,7 +38,7 @@ def parse(file):
     return vmx_data
 
 #MUST INPUT OPEN()'D FILE
-# Saves dict "vmx_data" to file "file"
+# saves dict "vmx_data" to file "file"
 def save(vmx_data, file):
     if isinstance(file, str):
         fileobj = open(file, 'r+')
@@ -53,13 +51,14 @@ def save(vmx_data, file):
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# different modes to run inside pseudo switch case            #
-# startvm - gee I wonder                                      #
-#   createvm - create a VM from template                      #
-# stopvm - read: above                                        #
-#                                                             #
+# ~~   different modes to run inside pseudo switch case    ~~ #
+# VM should be created in SSD (RUNNING for now) where it can  #
+# be started/stopped. The VM will stay here until Ruby sends  #
+# sends move command (moves from RUNNING/SSD to STORAGE/HDD)  #
+# and later compress command (compress VM and delete VM dir)  #
 #                                                             #
 # TODO add others if needed                                   #
+# NEED TO PARSE VMTYPE TO POINT TO OTHER VM TEMPLATES         #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 #creates the specified VM at vmDir of type vmType
@@ -71,17 +70,17 @@ def createvm(vmDir, vmType):
         print("Too many arguments.")
         exit()
 
-    print("Making dir: " + vmDir + " unzipping template")
+    # creates directory for vmDir if doesn't exist
     Path(vmDir).mkdir(parents=True, exist_ok=True)
 
     # TODO Here will go the code that parses the vmType into a specific directory 
     # that points to the template zip
-    
-    #print(ZipFile('./TEMPLATES/UbuntuJavaTemplateTEST.zip', 'r').namelist())
+
+    # extracts template to created folder    
     with ZipFile('./TEMPLATES/UbuntuJavaTemplateTEST.zip', 'r') as zip_ref:
-        #print(zip_ref.namelist())
         zip_ref.extractall(path=os.path.dirname(os.path.dirname(vmDir)))
 
+    # find .vmx and read it
     vmxPath = glob(os.path.join(vmDir, '*.vmx'))[0]
     with open(vmxPath, 'r+') as file:
         vmxDict = parse(file)
@@ -114,6 +113,7 @@ def startvm(vmDir, vmType, vncPort):
     # launches the VM at vmxPath
     os.system(f'vmrun start {vmxPath}') 
 
+# stops specifiec VM
 def stopvm(vmDir):
     if len(sys.argv) < 3:
         print("Insufficent arguments.")
@@ -121,23 +121,34 @@ def stopvm(vmDir):
     if len(sys.argv) > 3:
         print("Too many arguments.")
         exit()
-        
+
+    #finds the .vmx and stops the VM
     vmxPath = glob(os.path.join(vmDir, '*.vmx'))[0]    
     os.system(f'vmrun stop {vmxPath}') 
-    sleep(3)
+    sleep(1)
 
-    peth = Path(vmDir)
-    thing = list(peth.parts)
-    thing[0] = "STORAGE"
-    targ = os.path.join(*thing)
-    print(targ)
+# compresses folder vmDir
+def compressvm(vmDir):
+    if len(sys.argv) < 3:
+        print("Insufficent arguments.")
+        exit()
+    if len(sys.argv) > 3:
+        print("Too many arguments.")
+        exit()
+        
+    # dirParts = list(Path(vmDir).parts)
+    # targ = os.path.join(*dirParts)
 
-    move(vmDir, targ)
+    # zips up folder vmDir
+    make_archive(vmDir, 'zip', os.path.dirname(vmDir))
+    # removes redundant VM at vmDir
+    rmtree(vmDir)
+
+# moves vmDir to tarDir. Shocking, I know
+def movevm(vmDir, tarDir):
+    move(vmDir, tarDir)
     if len(os.listdir(os.path.dirname(os.path.dirname(vmDir)))) == 0:
         rmtree(os.path.dirname(os.path.dirname(vmDir)))
-
-
-
 
 #lame ass switch case
 def switch(arg):
@@ -147,6 +158,10 @@ def switch(arg):
         return stopvm(sys.argv[2])
     elif arg == "-createvm":
         return createvm(sys.argv[2], sys.argv[3])
+    elif arg == "-compressvm":
+        return compressvm(sys.argv[2])
+    elif arg == "-movevm":
+        return movevm(sys.argv[2], sys.argv[3])
     else:
         print(f'"{arg}" is not a valid command!')
         exit()
