@@ -78,15 +78,7 @@ def createvm(vmDir, vmType):
 
     # extracts template to created folder    
     with ZipFile('./TEMPLATES/UbuntuJavaTemplateTEST.zip', 'r') as zip_ref:
-        zip_ref.extractall(path=os.path.dirname(os.path.dirname(vmDir)))
-
-    # find .vmx and read it
-    vmxPath = glob(os.path.join(vmDir, '*.vmx'))[0]
-    with open(vmxPath, 'r+') as file:
-        vmxDict = parse(file)
-    # stops the annoying "I copied it" window from popping up 
-    vmxDict["uuid.action"] = 'keep'
-    save(vmxDict, vmxPath)   
+        zip_ref.extractall(path=os.path.dirname(vmDir))
 
 # configures the VNC port correctly and launches the specified VM
 def startvm(vmDir, vmType, vncPort):
@@ -108,6 +100,9 @@ def startvm(vmDir, vmType, vncPort):
         vmxDict = parse(file)
     # configures VNC port to be vncPort and saves it
     vmxDict["RemoteDisplay.vnc.port"] = vncPort
+    # stops the annoying "I copied it" window from popping up 
+    vmxDict["uuid.action"] = 'keep'
+
     save(vmxDict, vmxPath)   
 
     # launches the VM at vmxPath
