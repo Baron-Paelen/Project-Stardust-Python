@@ -62,7 +62,7 @@ def save(vmx_data, file):
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 #creates the specified VM at vmDir of type vmType
-def createvm(vmDir, vmType):
+def createvm(vmOwner, vmType):
     if len(sys.argv) < 4:
         print("Insufficent arguments.")
         exit()
@@ -147,21 +147,18 @@ def movevm(vmDir, tarDir):
 
 #lame ass switch case
 def switch(arg):
-    if arg == "-startvm":
+    if arg == "--startvm":
         return startvm(sys.argv[2], sys.argv[3], sys.argv[4])
-    elif arg == "-stopvm":
+    elif arg == "--stopvm":
         return stopvm(sys.argv[2])
-    elif arg == "-createvm":
+    elif arg == "--createvm":
         return createvm(sys.argv[2], sys.argv[3])
-    elif arg == "-compressvm":
+    elif arg == "--compressvm":
         return compressvm(sys.argv[2])
-    elif arg == "-movevm":
+    elif arg == "--movevm":
         return movevm(sys.argv[2], sys.argv[3])
     else:
         print(f'"{arg}" is not a valid command!')
         exit()
     
 switch(sys.argv[1])
-#print(os.path.join('.\\TEMPLATES', glob('.\\TEMPLATES\\*.zip')[1]))
-# ARGS: -type targetVM targetVMType VNCPort
-#        [1]    [2]        [3]        [4]
