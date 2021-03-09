@@ -6,7 +6,7 @@ from zipfile import ZipFile
 from glob import glob
 from pathlib import Path
 
-
+###############################################################################
 # yoinked from vmxparser: https://pypi.org/project/vmxparser/
 #MUST INPUT OPEN()'D FILE
 # parses .vmx file into a dictionary
@@ -39,11 +39,13 @@ def save(vmx_data, file):
     for key, value in vmx_data.items():
         fileobj.write(key + ' = ' + '"%s"\n' % value.replace('"', '\\"'))
 
-runDir = "./RUNNING/"
-storageDir = "./STORAGE/"
-templateDir = "./TEMPLATES/"
+#################################################################################
 
-UbunTemp = "/UbuntuJavaTemplate/"
+runDir = f".{os.sep}RUNNING{os.sep}"
+storageDir = f".{os.sep}STORAGE{os.sep}"
+templateDir = f".{os.sep}TEMPLATES{os.sep}"
+
+UbunTemplate = "UbuntuJavaTemplate.zip"
 
 
 #creates the specified VM at vmDir of type vmType
@@ -56,18 +58,14 @@ def createvm(vmOwner, vmType):
         exit()
 
     if (vmType == "Ubuntu"):
-        vmType2 = UbunTemp
-
-    # creates directory for vmDir if doesn't exist
-    vmDir = runDir + vmOwner + vmType2 + glob(runDir + vmOwner + vmType2 + "*.vmx")[0]
-    Path(vmDir).mkdir(parents=True, exist_ok=True)
-
-    # TODO Here will go the code that parses the vmType into a specific directory 
-    # that points to the template zip
-
-    # extracts template to created folder    
-    with ZipFile('./TEMPLATES/UbuntuJavaTemplateTEST.zip', 'r') as zip_ref:
+        vmType2 = UbunTemplate
+    
+    with ZipFile(os.path.join(templateDir, UbunTemplate), 'r') as zip_ref:
+        vmDir = os.path.join(runDir, vmOwner, vmType2[:-4])
+        # print(vmDir)
+        Path(vmDir).mkdir(parents=True, exist_ok=True)  
         zip_ref.extractall(path=os.path.dirname(vmDir))
+    
 
 # configures the VNC port correctly and launches the specified VM
 def startvm(vmOwner, vmType, vncPort):
@@ -79,12 +77,10 @@ def startvm(vmOwner, vmType, vncPort):
         exit()
 
     if (vmType == "Ubuntu"):
-        vmType2 = UbunTemp
-    print(glob(runDir + vmOwner + vmType2 + "*.vmx")[0])
-    vmDir = runDir + vmOwner + vmType2 + glob(os.path.join(runDir + vmOwner + vmType2, "*.vmx"))[0]
-
-    #glob(os.path.join(vmDir, '*.vmx'))[0]
-
+        vmType2 = UbunTemplate
+    
+    vmDir = os.path.join(runDir, vmOwner, vmType2[:-4])
+    print(vmDir)
 
     # handles directory error
     if not os.path.exists(vmDir):
@@ -92,7 +88,8 @@ def startvm(vmOwner, vmType, vncPort):
         exit()
 
     # reads .vmx to file to be edited
-    vmxPath = glob(os.path.join(vmDir, '/*.vmx'))[0]
+    vmxPath = os.path.join(vmDir, vmType2[0:-4] + '.vmx')
+    
     with open(vmxPath, 'r+') as file:
         vmxDict = parse(file)
     # configures VNC port to be vncPort and saves it
@@ -105,7 +102,7 @@ def startvm(vmOwner, vmType, vncPort):
     # launches the VM at vmxPath
     os.system(f'vmrun start {vmxPath}') 
 
-# stops specifiec VM
+# stops vmOwner's vmType virtual machine
 def stopvm(vmOwner, vmType):
     if len(sys.argv) < 4:
         print("Insufficent arguments.")
@@ -115,55 +112,92 @@ def stopvm(vmOwner, vmType):
         exit()
 
     if (vmType == "Ubuntu"):
-        vmType2 = UbunTemp
+        vmType2 = UbunTemplate
 
-    print(os.path.join(vmOwner + vmType2 '/*.vmx'))
     #finds the .vmx and stops the VM
-    vmxPath = glob(os.path.join(vmOwner + vmType2, '/*.vmx'))[0]    
+    vmxPath = os.path.join(vmDir, vmType2[0:-4] + '.vmx')    
     os.system(f'vmrun stop {vmxPath}') 
     sleep(1)
 
-# compresses folder vmDir
-def compressvm(vmOwner, vmType):
-    if len(sys.argv) < 3:
+# compresses vmOwner's vmType virtual machine and places it in storageDir
+def archivevm(vmOwner, vmType):
+    if len(sys.argv) < 4:
         print("Insufficent arguments.")
         exit()
-    if len(sys.argv) > 3:
+    if len(sys.argv) > 4:
         print("Too many arguments.")
         exit()
         
     if (vmType == "Ubuntu"):
-        vmType2 = UbunTemp
-    vmDir = runDir + vmOwner + vmType2 + glob(runDir + vmOwner + vmType2 + "*.vmx")[0]
+        vmType2 = UbunTemplate
 
-    # zips up folder vmDir
-    make_archive(vmDir, 'zip', os.path.dirname(vmDir))
+    vmDir = os.path.join(runDir, vmOwner, vmType2[:-4])
+
+    # zips up folder vmDir and puts it into the STORAGE location
+    # note: make_archive(./dir1, 'zip', dir2) makes a zipped file in '..' with the name of '..'.zip containing the contents of dir2
+    make_archive(os.path.join(storageDir, vmOwner, vmType2[:-4]), 'zip', Path(vmDir))
+
     # removes redundant VM at vmDir
     rmtree(vmDir)
 
-# moves vmDir to tarDir. Shocking, I know
-#TODO
-#TODO
-#TODO
-def movevm(vmDir, tarDir):
+# restores vmOwner's vmType virtual machine and places it in runDir
+def restorevm(vmOwner, vmType):
+    if len(sys.argv) < 4:
+        print("Insufficent arguments.")
+        exit()
+    if len(sys.argv) > 4:
+        print("Too many arguments.")
+        exit()
+
+    if (vmType == "Ubuntu"):
+        vmType2 = UbunTemplate
+
+    if not os.path.isfile(os.path.join(storageDir, vmOwner, vmType2)):
+        print(f"That archive does not exist. Check in {storageDir} or create an archive before using this command.")
+        exit()
+    
+    # extracts specified VM from storageDir to runDir
+    with ZipFile(os.path.join(storageDir, vmOwner, vmType2)) as file:
+        file.extractall(os.path.join(runDir, vmOwner, vmType2[:-4]))
+
+    # removes redendant archive in storageDir
+    os.remove(os.path.join(storageDir, vmOwner, vmType2))
+
+# moves vmOwner's vmType virtual machine 
+def movevm(vmOwner, vmType, tarDir):
+    if len(sys.argv) < 5:
+        print("Insufficent arguments.")
+        exit()
+    if len(sys.argv) > 5:
+        print("Too many arguments.")
+        exit()
+
+    if (vmType == "Ubuntu"):
+        vmType2 = UbunTemplate
+    vmDir = os.path.join(runDir, vmOwner, vmType2[:-4])
     move(vmDir, tarDir)
-    if len(os.listdir(os.path.dirname(os.path.dirname(vmDir)))) == 0:
-        rmtree(os.path.dirname(os.path.dirname(vmDir)))
 
 #lame ass switch case
 def switch(arg):
-    if arg == "--startvm":
+    if arg ==   "--startvm":
         return startvm(sys.argv[2], sys.argv[3], sys.argv[4])
     elif arg == "--stopvm":
         return stopvm(sys.argv[2], sys.argv[3])
     elif arg == "--createvm":
         return createvm(sys.argv[2], sys.argv[3])
-    elif arg == "--compressvm":
-        return compressvm(sys.argv[2], sys.argv[3])
+    elif arg == "--archivevm":
+        return archivevm(sys.argv[2], sys.argv[3])
+    elif arg == "--restorevm":
+        return restorevm(sys.argv[2], sys.argv[3])
     elif arg == "--movevm":
-        return movevm(sys.argv[2], sys.argv[3])
+        return movevm(sys.argv[2], sys.argv[3], sys.argv[4])
     else:
         print(f'"{arg}" is not a valid command!')
         exit()
     
-switch(sys.argv[1])
+print(sys.argv)
+print(len(sys.argv))
+if(len(sys.argv) > 1):
+    switch(sys.argv[1])
+else:
+    print("Insufficient Arguments")
